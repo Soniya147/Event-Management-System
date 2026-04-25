@@ -1,0 +1,247 @@
+﻿@{
+    ViewData["Title"] = "Event Management System";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Event Management System</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <style>
+            body { padding: 30px; font-family: Arial; }
+            .ticket-table th, .ticket-table td { vertical-align: middle; }
+            .edit-mode input { border: 1px solid #ccc; padding: 2px 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h3 class="text-center mb-4"><b>ASP.NET MACHINE TEST — Event Management</b></h3>
+
+       
+        <div class="row mb-3">
+            <label class="col-sm-2 fw-bold">Event Name</label>
+            <div class="col-sm-4">
+                <input id="eventName" type="text" class="form-control" />
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <label class="col-sm-2 fw-bold">Event Description</label>
+            <div class="col-sm-4">
+                <textarea id="eventDesc" class="form-control" rows="3"></textarea>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <label class="col-sm-2 fw-bold">Start Date</label>
+            <div class="col-sm-3">
+                <input id="startDate" type="date" class="form-control" />
+            </div>
+            <label class="col-sm-1 fw-bold">End Date</label>
+            <div class="col-sm-3">
+                <input id="endDate" type="date" class="form-control" />
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <label class="col-sm-2 fw-bold">Organizer</label>
+            <div class="col-sm-4">
+                <input id="organizer" type="text" class="form-control" />
+            </div>
+        </div>
+
+        
+        <div class="row mb-2">
+            <label class="col-sm-2 fw-bold">Tickets</label>
+            <div class="col-sm-4">
+                <button id="btnAddTicket" class="btn btn-secondary btn-sm">Add new ticket</button>
+            </div>
+        </div>
+
+       
+        <table class="table table-bordered ticket-table" style="max-width:600px;">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Ticket No</th>
+                    <th>Price</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="ticketBody">
+               
+            </tbody>
+        </table>
+
+        
+        <button id="btnSaveEvent" class="btn btn-primary">Save Event</button>
+        <span id="saveMsg" class="ms-3 text-success fw-bold"></span>
+    </div>
+
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        let ticketCounter = 0;   // auto-increment display ID
+        let tickets = [];        // in-memory ticket array
+
+       
+        $('#btnAddTicket').on('click', function () {
+        const newRow = `
+        <tr id="newTicketRow">
+        <td><input type="text" id="newId" class="form-control form-control-sm" placeholder="ID" /></td>
+        <td><input type="text" id="newTicketNo" class="form-control form-control-sm" placeholder="Ticket No" /></td>
+        <td><input type="number" id="newPrice" class="form-control form-control-sm" placeholder="Price" step="0.01" /></td>
+        <td><button class="btn btn-success btn-sm" id="btnSaveTicket">Save</button></td>
+        </tr>`;
+
+        
+        if ($('#newTicketRow').length === 0) {
+        $('#ticketBody').append(newRow);
+        }
+        });
+
+        
+        $(document).on('click', '#btnSaveTicket', function () {
+        const idVal     = $.trim($('#newId').val());
+        const ticketNo  = $.trim($('#newTicketNo').val());
+        const price     = $.trim($('#newPrice').val());
+
+        if (!idVal || !ticketNo || !price) {
+        alert('Please fill in all 3 ticket fields (ID, Ticket No, Price).');
+        return;
+        }
+        if (isNaN(price) || parseFloat(price) <= 0) {
+        alert('Price must be a positive number.');
+        return;
+        }
+
+        ticketCounter++;
+        const ticket = { tempId: ticketCounter, displayId: idVal, ticketNo, price: parseFloat(price) };
+        tickets.push(ticket);
+
+        
+        $('#newTicketRow').remove();
+        appendTicketRow(ticket);
+        });
+
+        function appendTicketRow(t) {
+        const row = `
+        <tr id="ticketRow_${t.tempId}" data-tempid="${t.tempId}">
+        <td class="td-id">${t.displayId}</td>
+        <td class="td-no">${t.ticketNo}</td>
+        <td class="td-price">${parseFloat(t.price).toFixed(2)}</td>
+        <td>
+        <button class="btn btn-warning btn-sm btnEdit">Edit</button>
+        <button class="btn btn-danger btn-sm btnDelete ms-1">Delete</button>
+        </td>
+        </tr>`;
+        $('#ticketBody').append(row);
+        }
+
+       
+        $(document).on('click', '.btnEdit', function () {
+        const row    = $(this).closest('tr');
+        const tempId = row.data('tempid');
+        const t      = tickets.find(x => x.tempId === tempId);
+
+        
+        row.find('.td-id').html(`<input class="form-control form-control-sm eId" value="${t.displayId}" />`);
+        row.find('.td-no').html(`<input class="form-control form-control-sm eNo" value="${t.ticketNo}" />`);
+        row.find('.td-price').html(`<input type="number" class="form-control form-control-sm ePrice" value="${t.price}" step="0.01" />`);
+        row.find('td:last').html(`<button class="btn btn-success btn-sm btnUpdate">Save</button>`);
+        });
+
+      
+        $(document).on('click', '.btnUpdate', function () {
+        const row    = $(this).closest('tr');
+        const tempId = row.data('tempid');
+
+        const idVal    = $.trim(row.find('.eId').val());
+        const ticketNo = $.trim(row.find('.eNo').val());
+        const price    = $.trim(row.find('.ePrice').val());
+
+        if (!idVal || !ticketNo || !price || parseFloat(price) <= 0) {
+        alert('All fields are required and price must be positive.');
+        return;
+        }
+
+        // Update in-memory
+        const t = tickets.find(x => x.tempId === tempId);
+        t.displayId = idVal;
+        t.ticketNo  = ticketNo;
+        t.price     = parseFloat(price);
+
+        // Re-render the row
+        row.find('.td-id').html(t.displayId);
+        row.find('.td-no').html(t.ticketNo);
+        row.find('.td-price').html(t.price.toFixed(2));
+        row.find('td:last').html(`
+        <button class="btn btn-warning btn-sm btnEdit">Edit</button>
+        <button class="btn btn-danger btn-sm btnDelete ms-1">Delete</button>`);
+        });
+
+        
+        $(document).on('click', '.btnDelete', function () {
+        const row    = $(this).closest('tr');
+        const tempId = row.data('tempid');
+        if (!confirm('Delete this ticket?')) return;
+        tickets = tickets.filter(x => x.tempId !== tempId);
+        row.remove();
+        });
+
+        $('#btnSaveEvent').on('click', async function () {
+        const eventName = $.trim($('#eventName').val());
+        const eventDesc = $.trim($('#eventDesc').val());
+        const startDate = $('#startDate').val();
+        const endDate   = $('#endDate').val();
+        const organizer = $.trim($('#organizer').val());
+
+        
+        if (!eventName || !eventDesc || !startDate || !endDate || !organizer) {
+        alert('Please fill in all Event fields.');
+        return;
+        }
+        if (new Date(endDate) < new Date(startDate)) {
+        alert('End Date cannot be before Start Date.');
+        return;
+        }
+        if (tickets.length === 0) {
+        alert('Please add at least one ticket.');
+        return;
+        }
+
+        const payload = {
+        eventName,
+        eventDescription: eventDesc,
+        startDate,
+        endDate,
+        organizer,
+        tickets: tickets.map(t => ({
+        ticketNo: t.ticketNo,
+        price: t.price
+        }))
+        };
+
+        try {
+        const response = await fetch('/Event/SaveEvent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+        $('#saveMsg').text(` Event saved! ID: ${result.eventId}`);
+        } else {
+        alert('Save failed. Please try again.');
+        }
+        } catch (err) {
+        alert('Error: ' + err.message);
+        }
+        });
+    </script>
+</body>
+</html>
